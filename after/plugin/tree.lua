@@ -1,0 +1,37 @@
+local tree = require("nvim-tree")
+local api = require("nvim-tree.api")
+
+tree.setup({
+    view = {
+        width = 35,
+    },
+
+    renderer = {
+        group_empty = true,
+
+        icons = {
+            show = {
+                file = true,
+                folder = true,
+                git = true,
+            },
+        },
+    },
+
+    filters = {
+        dotfiles = false,
+    },
+
+    git = {
+        enable = true,
+    },
+})
+
+vim.keymap.set("n", "<leader>e", function()
+    api.tree.toggle({
+        find_file = true,
+        focus = true,
+    })
+end, {
+    desc = "Toggle file explorer",
+})

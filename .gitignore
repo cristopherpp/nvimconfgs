@@ -1,0 +1,11 @@
+
+# Manually installed native packages
+/pack/
+
+# Temporary editor files
+*.swp
+*.swo
+*.tmp
+
+# Local operating-system files
+.DS_Store
