@@ -1,11 +1,10 @@
-
 # Neovim From Scratch
 
-A personal Neovim configuration built manually for Arch Linux.
+A personal Neovim configuration built for Arch Linux.
 
-This setup does **not** use LazyVim, `lazy.nvim`, or another plugin manager.
-Plugins are regular Git repositories installed through Neovim's native
-`pack/*/start/*` package system.
+This setup does **not** use LazyVim, `lazy.nvim`, or another third-party plugin
+manager. Plugins are declared explicitly and installed with Neovim's built-in
+`vim.pack` API.
 
 ## Features
 
@@ -13,12 +12,14 @@ Plugins are regular Git repositories installed through Neovim's native
 - Fuzzy file and project search with Telescope
 - Floating terminal with ToggleTerm
 - Tree-sitter syntax highlighting
+- Built-in plugin management with `vim.pack`
+- Reproducible plugin revisions through a lockfile
 - Native Neovim LSP support
 - ESLint and Ruff linting
 - Formatting with Conform
 - Tokyo Night colorscheme
 - System clipboard support on Wayland
-- Latin American keyboard mapping for `Ã±`
+- Latin American keyboard mapping for `ñ`
 
 ## Requirements
 
@@ -67,6 +68,221 @@ Check your Neovim version:
 nvim --version | head -n 1
 ```
 
+## Plugin Management with `vim.pack`
+
+### What `vim.pack` is
+
+`vim.pack` is Neovim's built-in Git-based plugin manager. It installs, loads,
+updates and removes plugins without requiring Packer, `lazy.nvim`, or another
+third-party manager.
+
+Neovim currently describes `vim.pack` as experimental but stable enough for
+daily use. This configuration requires Neovim 0.12 or newer.
+
+Official documentation:
+[Neovim `vim.pack`](https://neovim.io/doc/user/pack/#vim.pack)
+
+### Source of truth
+
+Plugin installation and plugin configuration have separate responsibilities:
+
+| Location | Responsibility |
+|---|---|
+| `lua/config/plugins.lua` | Declares which plugins must exist |
+| `after/plugin/*.lua` | Configures each installed plugin |
+| `nvim-pack-lock.json` | Records the exact installed revisions |
+
+`lua/config/plugins.lua` is the canonical plugin list:
+
+```lua
+if not vim.pack then
+    error("This configuration requires Neovim 0.12 or newer for vim.pack")
+end
+
+local github = function(repository)
+    return "https://github.com/" .. repository
+end
+
+vim.pack.add({
+    {
+        src = github("nvim-lua/plenary.nvim"),
+        name = "plenary.nvim",
+    },
+    {
+        src = github("nvim-telescope/telescope.nvim"),
+        name = "telescope.nvim",
+    },
+}, {
+    confirm = false,
+})
+```
+
+Dependencies should be declared before the plugins that use them. For example,
+Plenary is declared before Telescope, while nvim-web-devicons is declared
+before nvim-tree.
+
+The `confirm = false` option allows a newly cloned configuration to install its
+missing plugins automatically. It does not automatically update plugins that
+are already installed.
+
+### Startup lifecycle
+
+When Neovim starts:
+
+1. `init.lua` loads `lua/config/plugins.lua`.
+2. `vim.pack.add()` reads the plugin specifications.
+3. Missing plugins are cloned in parallel.
+4. Installed plugins are added to Neovim's runtime.
+5. Their revisions are recorded in `nvim-pack-lock.json`.
+6. Files under `after/plugin/` apply the plugin-specific configuration.
+
+`vim.pack` stores managed plugin repositories outside this Git repository:
+
+```text
+~/.local/share/nvim/site/pack/core/opt/
+```
+
+The configuration repository therefore contains declarations and a lockfile,
+not copies of third-party plugin repositories.
+
+### Lockfile
+
+The lockfile is located at:
+
+```text
+~/.config/nvim/nvim-pack-lock.json
+```
+
+It stores the resolved source, version information and exact Git revision for
+every managed plugin.
+
+The lockfile must:
+
+- Be committed to Git.
+- Be updated after accepted plugin updates.
+- Never be edited manually.
+- Not be added to `.gitignore`.
+
+On another computer, the first `vim.pack` call reads this lockfile and installs
+the recorded plugin revisions. This makes the configuration reproducible
+instead of always installing an arbitrary latest commit.
+
+### Inspect installed plugins
+
+Show all plugins managed by `vim.pack`:
+
+```vim
+:lua vim.print(vim.pack.get())
+```
+
+Open the plugin review buffer without downloading new information:
+
+```vim
+:packupdate ++offline
+```
+
+### Update plugins
+
+Check every managed plugin for updates:
+
+```vim
+:packupdate
+```
+
+Neovim opens a confirmation buffer containing the proposed revisions and
+changes:
+
+- Use `]]` and `[[` to move between plugin sections.
+- Use `:write` to accept and apply the selected updates.
+- Use `:quit` to reject the update operation.
+- Run `:restart` after applying updates.
+
+Update one plugin:
+
+```vim
+:packupdate telescope.nvim
+```
+
+After updating nvim-treesitter, also update its parsers:
+
+```vim
+:TSUpdate
+```
+
+Commit the changed lockfile after validating the updates:
+
+```bash
+git add nvim-pack-lock.json
+git commit -m "Update Neovim plugins"
+```
+
+### Add a plugin
+
+Add a specification to `lua/config/plugins.lua`:
+
+```lua
+{
+    src = github("OWNER/REPOSITORY"),
+    name = "PLUGIN_NAME",
+},
+```
+
+Create its configuration separately:
+
+```text
+after/plugin/plugin-name.lua
+```
+
+Restart Neovim. The missing plugin is installed automatically and added to the
+lockfile.
+
+### Pin a plugin
+
+A plugin can follow a branch, tag or exact commit through `version`:
+
+```lua
+{
+    src = github("OWNER/REPOSITORY"),
+    name = "PLUGIN_NAME",
+    version = "v1.2.3",
+},
+```
+
+The lockfile already records exact resolved revisions, so explicit version
+constraints should be used only when the configuration needs to remain on a
+specific branch, release or commit.
+
+### Remove a plugin
+
+1. Remove its specification from `lua/config/plugins.lua`.
+2. Restart Neovim so it is no longer active.
+3. Remove its managed repository:
+
+```vim
+:packdel PLUGIN_NAME
+```
+
+4. Remove its matching `after/plugin/plugin-name.lua` file.
+5. Commit the configuration and lockfile changes.
+
+Removing only the files from disk is insufficient: if the specification remains
+in `plugins.lua`, `vim.pack` installs the plugin again during the next startup.
+
+### Recover a previous plugin state
+
+Because `nvim-pack-lock.json` is tracked by Git, restore its previous version:
+
+```bash
+git restore nvim-pack-lock.json
+```
+
+Then restart Neovim and synchronize the installed revisions with the restored
+lockfile:
+
+```vim
+:packupdate ++offline ++lockfile
+```
+
 ## Installation
 
 ### 1. Back up the current configuration
@@ -105,44 +321,35 @@ Replace `<REPOSITORY_URL>` with the URL of your repository:
 git clone <REPOSITORY_URL> ~/.config/nvim
 ```
 
-### 3. Install the plugins
+### 3. Migrate an older manual-package installation
 
-The plugin repositories are intentionally excluded from Git. Install them
-locally:
+Skip this step on a clean installation. If this configuration previously kept
+cloned plugins under `~/.config/nvim/pack`, move that directory aside so the
+same plugins are not loaded twice:
 
 ```bash
-plugin_dir="$HOME/.config/nvim/pack/plugins/start"
-mkdir -p "$plugin_dir"
+legacy_pack="$HOME/.config/nvim/pack"
+legacy_backup="$HOME/.local/backups/nvim-pack-$(date +%Y%m%d-%H%M%S)"
 
-git clone --depth=1 https://github.com/nvim-tree/nvim-web-devicons \
-  "$plugin_dir/nvim-web-devicons"
+if [ -d "$legacy_pack" ]; then
+  mkdir -p "$legacy_backup"
+  mv "$legacy_pack" "$legacy_backup/"
+  echo "Legacy packages moved to: $legacy_backup"
+fi
+```
 
-git clone --depth=1 https://github.com/nvim-tree/nvim-tree.lua \
-  "$plugin_dir/nvim-tree.lua"
+Make sure `init.lua` loads the plugin declarations:
 
-git clone --depth=1 https://github.com/nvim-lua/plenary.nvim \
-  "$plugin_dir/plenary.nvim"
+```lua
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 
-git clone --depth=1 https://github.com/nvim-telescope/telescope.nvim \
-  "$plugin_dir/telescope.nvim"
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
-git clone --depth=1 https://github.com/akinsho/toggleterm.nvim \
-  "$plugin_dir/toggleterm.nvim"
-
-git clone --depth=1 https://github.com/nvim-treesitter/nvim-treesitter \
-  "$plugin_dir/nvim-treesitter"
-
-git clone --depth=1 https://github.com/neovim/nvim-lspconfig \
-  "$plugin_dir/nvim-lspconfig"
-
-git clone --depth=1 https://github.com/mfussenegger/nvim-lint \
-  "$plugin_dir/nvim-lint"
-
-git clone --depth=1 https://github.com/stevearc/conform.nvim \
-  "$plugin_dir/conform.nvim"
-
-git clone --depth=1 https://github.com/folke/tokyonight.nvim \
-  "$plugin_dir/tokyonight.nvim"
+require("config.options")
+require("config.keymaps")
+require("config.plugins")
 ```
 
 ### 4. Start and validate Neovim
@@ -152,6 +359,10 @@ Start Neovim:
 ```bash
 nvim
 ```
+
+`vim.pack` reads `lua/config/plugins.lua`, installs every missing plugin and
+records its exact revision in `nvim-pack-lock.json`. Do not edit the lockfile
+manually.
 
 Install or update the Tree-sitter parsers:
 
@@ -170,25 +381,23 @@ Run the health checks:
 
 ```text
 ~/.config/nvim/
-â”œâ”€â”€ init.lua
-â”œâ”€â”€ lua/
-â”‚   â””â”€â”€ config/
-â”‚       â”œâ”€â”€ keymaps.lua
-â”‚       â””â”€â”€ options.lua
-â”œâ”€â”€ after/
-â”‚   â””â”€â”€ plugin/
-â”‚       â”œâ”€â”€ colors.lua
-â”‚       â”œâ”€â”€ format.lua
-â”‚       â”œâ”€â”€ lint.lua
-â”‚       â”œâ”€â”€ lsp.lua
-â”‚       â”œâ”€â”€ telescope.lua
-â”‚       â”œâ”€â”€ terminal.lua
-â”‚       â”œâ”€â”€ tree.lua
-â”‚       â””â”€â”€ treesitter.lua
-â””â”€â”€ pack/
-    â””â”€â”€ plugins/
-        â””â”€â”€ start/
-            â””â”€â”€ plugin repositories...
+├── init.lua
+├── lua/
+│   └── config/
+│       ├── keymaps.lua
+│       ├── options.lua
+│       └── plugins.lua
+├── after/
+│   └── plugin/
+│       ├── colors.lua
+│       ├── format.lua
+│       ├── lint.lua
+│       ├── lsp.lua
+│       ├── telescope.lua
+│       ├── terminal.lua
+│       ├── tree.lua
+│       └── treesitter.lua
+└── nvim-pack-lock.json
 ```
 
 ### Configuration files
@@ -198,6 +407,8 @@ Run the health checks:
 | `init.lua` | Main entry point and leader definitions |
 | `lua/config/options.lua` | Core editor behavior |
 | `lua/config/keymaps.lua` | General keyboard mappings |
+| `lua/config/plugins.lua` | Canonical `vim.pack` plugin declarations |
+| `nvim-pack-lock.json` | Reproducible plugin revisions |
 | `after/plugin/tree.lua` | File explorer |
 | `after/plugin/telescope.lua` | File and project search |
 | `after/plugin/terminal.lua` | Floating terminal |
@@ -207,8 +418,8 @@ Run the health checks:
 | `after/plugin/format.lua` | Language formatters |
 | `after/plugin/colors.lua` | Tokyo Night colorscheme |
 
-Files under `after/plugin/` are loaded after native `start` packages, ensuring
-that each plugin is available before its configuration runs.
+`vim.pack` makes each plugin available during startup. Files under
+`after/plugin/` keep installation separate from plugin behavior and mappings.
 
 ## Keymaps
 
@@ -224,7 +435,7 @@ The leader key is `Space`.
 | Select all | `Ctrl-a` |
 | Copy selection | `Ctrl-c` |
 | Paste | `Ctrl-v` |
-| Command mode on a Latin American keyboard | `Ã±` |
+| Command mode on a Latin American keyboard | `ñ` |
 | Next buffer | `Space b n` |
 | Previous buffer | `Space b p` |
 | Delete buffer | `Space b d` |
@@ -263,10 +474,10 @@ The leader key is `Space`.
 | Python | Pyright | Ruff | Ruff |
 | Lua | lua-language-server | LSP diagnostics | StyLua |
 | JavaScript/TypeScript | ts_ls | ESLint | Prettier |
-| HTML | html language server | â€” | Prettier |
-| CSS | cssls | â€” | Prettier |
-| JSON | jsonls | â€” | Prettier |
-| Markdown | Tree-sitter | â€” | Prettier |
+| HTML | html language server | — | Prettier |
+| CSS | cssls | — | Prettier |
+| JSON | jsonls | — | Prettier |
+| Markdown | Tree-sitter | — | Prettier |
 
 ESLint is specific to the JavaScript and TypeScript ecosystem. Initialize it
 inside each web project:
@@ -314,54 +525,20 @@ do
 done
 ```
 
-## Maintenance
+## Maintenance Quick Reference
 
-### Update every plugin
+The complete lifecycle is documented in
+[Plugin Management with `vim.pack`](#plugin-management-with-vimpack).
 
-```bash
-plugin_dir="$HOME/.config/nvim/pack/plugins/start"
-
-for plugin in "$plugin_dir"/*; do
-  if [ -d "$plugin/.git" ]; then
-    echo "Updating $(basename "$plugin")"
-    git -C "$plugin" pull --ff-only
-  fi
-done
-```
-
-After updating nvim-treesitter:
-
-```vim
-:TSUpdate
-```
-
-### Add a plugin
-
-Clone the plugin:
-
-```bash
-git clone --depth=1 <PLUGIN_URL> \
-  ~/.config/nvim/pack/plugins/start/<PLUGIN_NAME>
-```
-
-Create its configuration:
-
-```text
-after/plugin/<plugin-name>.lua
-```
-
-Restart Neovim and run `:checkhealth`.
-
-### Remove a plugin
-
-Remove only the specific plugin directory and its configuration file:
-
-```bash
-rm -rf ~/.config/nvim/pack/plugins/start/<PLUGIN_NAME>
-rm ~/.config/nvim/after/plugin/<plugin-name>.lua
-```
-
-Verify both paths carefully before removing anything.
+| Task | Command |
+|---|---|
+| Inspect managed plugins | `:lua vim.print(vim.pack.get())` |
+| Review installed state | `:packupdate ++offline` |
+| Update every plugin | `:packupdate` |
+| Update one plugin | `:packupdate PLUGIN_NAME` |
+| Remove an inactive plugin | `:packdel PLUGIN_NAME` |
+| Restart Neovim | `:restart` |
+| Update Tree-sitter parsers | `:TSUpdate` |
 
 ## Publish the Configuration
 
@@ -369,15 +546,15 @@ From `~/.config/nvim`:
 
 ```bash
 git init
-git add init.lua lua after README.md .gitignore
+git add init.lua lua after nvim-pack-lock.json README.md .gitignore
 git commit -m "Add personal Neovim configuration"
 git branch -M main
 git remote add origin <REPOSITORY_URL>
 git push -u origin main
 ```
 
-The `pack/` directory remains local and is not uploaded. Anyone cloning the
-configuration recreates it using the installation commands above.
+The lockfile is part of the configuration and must be committed. It allows
+another machine to install the same plugin revisions on first startup.
 
 ## Design Principles
 
@@ -387,3 +564,14 @@ configuration recreates it using the installation commands above.
 - Install language tools through the operating system.
 - Add plugins only when they solve a real limitation.
 - Document every new dependency and keymap.
+
+## Planned Improvements
+
+- Autocompletion
+- Snippets
+- Git integration
+- Harpoon
+- Status line
+- Keymap discovery
+- DAP debugging
+- Test runner integration
