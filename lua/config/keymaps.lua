@@ -135,3 +135,43 @@ map("n", "ñ", ":", {
 map("n", "Ñ", ";", {
     desc = "Repeat character movement",
 })
+
+-- Diagnostics
+map("n", "]d", function()
+    vim.diagnostic.jump({
+        count = 1,
+        float = true,
+    })
+end, {
+    desc = "Next diagnostic",
+})
+
+map("n", "[d", function()
+    vim.diagnostic.jump({
+        count = -1,
+        float = true,
+    })
+end, {
+    desc = "Previous diagnostic",
+})
+
+map("n", "<leader>ld", vim.diagnostic.open_float, {
+    desc = "Show line diagnostic",
+})
+
+map("n", "<leader>lq", vim.diagnostic.setloclist, {
+    desc = "Diagnostics to location list",
+})
+
+-- Quickfix navigation
+map("n", "]q", "<cmd>cnext<CR>zz", {
+    desc = "Next quickfix item",
+})
+
+map("n", "[q", "<cmd>cprevious<CR>zz", {
+    desc = "Previous quickfix item",
+})
+
+map("n", "<leader>sq", "<cmd>copen<CR>", {
+    desc = "Open quickfix list",
+})

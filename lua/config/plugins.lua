@@ -50,7 +50,46 @@ vim.pack.add({
         src = github("folke/tokyonight.nvim"),
         name = "tokyonight.nvim",
     },
-}, {
+    -- Fast navigation
+    {
+        src = github("ThePrimeagen/harpoon"),
+        name = "harpoon",
+        version = "harpoon2",
+    },
+
+    -- Git
+    {
+        src = github("lewis6991/gitsigns.nvim"),
+        name = "gitsigns.nvim",
+    },
+    {
+        src = github("tpope/vim-fugitive"),
+        name = "vim-fugitive",
+    },
+
+    -- Undo history
+    {
+        src = github("mbbill/undotree"),
+        name = "undotree",
+    },
+
+    -- Completion
+    {
+        src = github("hrsh7th/nvim-cmp"),
+        name = "nvim-cmp",
+    },
+    {
+        src = github("hrsh7th/cmp-nvim-lsp"),
+        name = "cmp-nvim-lsp",
+    },
+    {
+        src = github("hrsh7th/cmp-buffer"),
+        name = "cmp-buffer",
+    },
+    {
+        src = github("hrsh7th/cmp-path"),
+        name = "cmp-path",
+    }, 
     -- Install missing plugins automatically on a new machine.
     confirm = false,
 })
