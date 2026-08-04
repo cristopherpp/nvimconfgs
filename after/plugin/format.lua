@@ -1,4 +1,8 @@
-local conform = require("conform")
+local available, conform = pcall(require, "conform")
+
+if not available then
+    return
+end
 
 conform.setup({
     formatters_by_ft = {

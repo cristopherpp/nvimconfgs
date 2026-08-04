@@ -1,4 +1,11 @@
-local treesitter = require("nvim-treesitter")
+local available, treesitter = pcall(
+    require,
+    "nvim-treesitter"
+)
+
+if not available then
+    return
+end
 
 treesitter.setup()
 

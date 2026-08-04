@@ -4,55 +4,117 @@ if not available then
     return
 end
 
+local terminal_api = require("toggleterm.terminal")
+local map = vim.keymap.set
+
 toggleterm.setup({
-    size = 15,
     direction = "float",
     start_in_insert = true,
     close_on_exit = true,
-    persist_size = true,
+    shade_terminals = false,
+
     float_opts = {
         border = "rounded",
+
+        width = function()
+            return math.floor(vim.o.columns * 0.85)
+        end,
+
+        height = function()
+            return math.floor(vim.o.lines * 0.80)
+        end,
+
+        title_pos = "center",
     },
 })
 
-local map = vim.keymap.set
+local function delete_terminal()
+    local terminals = terminal_api.get_all()
 
-map({ "n", "t" }, "<leader>tt", "<cmd>ToggleTerm<CR>", {
-    desc = "Toggle last terminal",
+    if #terminals == 0 then
+        vim.notify(
+            "There are no terminals to delete",
+            vim.log.levels.INFO
+        )
+        return
+    end
+
+    vim.ui.select(terminals, {
+        prompt = "Delete terminal:",
+
+        format_item = function(terminal)
+            local name = terminal.display_name
+
+            if name and name ~= "" then
+                return string.format(
+                    "Terminal %d — %s",
+                    terminal.id,
+                    name
+                )
+            end
+
+            return string.format(
+                "Terminal %d",
+                terminal.id
+            )
+        end,
+    }, function(terminal)
+        if not terminal then
+            return
+        end
+
+        local terminal_id = terminal.id
+
+        terminal:shutdown()
+
+        vim.notify(
+            string.format(
+                "Deleted terminal %d",
+                terminal_id
+            )
+        )
+    end)
+end
+
+-- Toggle the last selected terminal.
+-- This hides it without terminating its process.
+map("n", "<leader>tt", "<cmd>ToggleTerm<CR>", {
+    desc = "Toggle current terminal",
 })
 
+-- Always create a completely new floating terminal.
 map("n", "<leader>tn", "<cmd>TermNew direction=float<CR>", {
-    desc = "New floating terminal",
+    desc = "Create new terminal",
 })
 
-map("n", "<leader>th", "<cmd>TermNew direction=horizontal<CR>", {
-    desc = "New horizontal terminal",
-})
-
-map("n", "<leader>tv", "<cmd>TermNew direction=vertical<CR>", {
-    desc = "New vertical terminal",
-})
-
+-- Select and open an existing terminal.
 map("n", "<leader>ts", "<cmd>TermSelect<CR>", {
     desc = "Select terminal",
 })
 
-map("t", "<Esc><Esc>", [[<C-\><C-n>]], {
-    desc = "Leave terminal mode",
+-- Give terminals useful names such as server, tests or database.
+map("n", "<leader>tr", "<cmd>ToggleTermSetName<CR>", {
+    desc = "Rename terminal",
 })
 
-map("t", "<C-h>", [[<Cmd>wincmd h<CR>]], {
-    desc = "Move to left window",
+-- Select a terminal and permanently terminate/delete it.
+map("n", "<leader>td", delete_terminal, {
+    desc = "Delete terminal",
 })
 
-map("t", "<C-j>", [[<Cmd>wincmd j<CR>]], {
-    desc = "Move to lower window",
-})
+-- Terminal-mode mappings.
+vim.api.nvim_create_autocmd("TermOpen", {
+    pattern = "term://*toggleterm#*",
 
-map("t", "<C-k>", [[<Cmd>wincmd k<CR>]], {
-    desc = "Move to upper window",
-})
+    callback = function(event)
+        map("t", "<Esc><Esc>", [[<C-\><C-n>]], {
+            buffer = event.buf,
+            desc = "Leave terminal mode",
+        })
 
-map("t", "<C-l>", [[<Cmd>wincmd l<CR>]], {
-    desc = "Move to right window",
+        map("t", "<C-q>", [[<C-\><C-n><cmd>ToggleTerm<CR>]], {
+            buffer = event.buf,
+            desc = "Hide terminal",
+        })
+    end,
 })

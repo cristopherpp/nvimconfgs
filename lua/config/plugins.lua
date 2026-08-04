@@ -1,13 +1,9 @@
-if not vim.pack then
-    error("This configuration requires Neovim 0.12 or newer for vim.pack")
-end
-
-local github = function(repository)
+local function github(repository)
     return "https://github.com/" .. repository
 end
 
-vim.pack.add({
-    -- Shared dependencies must be declared before their consumers.
+local plugins = {
+    -- Shared dependencies
     {
         src = github("nvim-tree/nvim-web-devicons"),
         name = "nvim-web-devicons",
@@ -17,7 +13,7 @@ vim.pack.add({
         name = "plenary.nvim",
     },
 
-    -- Editor features.
+    -- Navigation
     {
         src = github("nvim-tree/nvim-tree.lua"),
         name = "nvim-tree.lua",
@@ -27,9 +23,26 @@ vim.pack.add({
         name = "telescope.nvim",
     },
     {
+        src = github("ThePrimeagen/harpoon"),
+        name = "harpoon",
+        version = "harpoon2",
+    },
+
+    -- Interface
+    {
+        src = github("folke/which-key.nvim"),
+        name = "which-key.nvim",
+    },
+    {
         src = github("akinsho/toggleterm.nvim"),
         name = "toggleterm.nvim",
     },
+    {
+        src = github("folke/tokyonight.nvim"),
+        name = "tokyonight.nvim",
+    },
+
+    -- Languages
     {
         src = github("nvim-treesitter/nvim-treesitter"),
         name = "nvim-treesitter",
@@ -45,32 +58,6 @@ vim.pack.add({
     {
         src = github("stevearc/conform.nvim"),
         name = "conform.nvim",
-    },
-    {
-        src = github("folke/tokyonight.nvim"),
-        name = "tokyonight.nvim",
-    },
-    -- Fast navigation
-    {
-        src = github("ThePrimeagen/harpoon"),
-        name = "harpoon",
-        version = "harpoon2",
-    },
-
-    -- Git
-    {
-        src = github("lewis6991/gitsigns.nvim"),
-        name = "gitsigns.nvim",
-    },
-    {
-        src = github("tpope/vim-fugitive"),
-        name = "vim-fugitive",
-    },
-
-    -- Undo history
-    {
-        src = github("mbbill/undotree"),
-        name = "undotree",
     },
 
     -- Completion
@@ -89,7 +76,34 @@ vim.pack.add({
     {
         src = github("hrsh7th/cmp-path"),
         name = "cmp-path",
-    }, 
-    -- Install missing plugins automatically on a new machine.
+    },
+
+    -- Git
+    {
+        src = github("lewis6991/gitsigns.nvim"),
+        name = "gitsigns.nvim",
+    },
+    {
+        src = github("tpope/vim-fugitive"),
+        name = "vim-fugitive",
+    },
+
+    -- History
+    {
+        src = github("mbbill/undotree"),
+        name = "undotree",
+    },
+}
+
+local pack_ok, pack_error = pcall(vim.pack.add, plugins, {
     confirm = false,
 })
+
+if not pack_ok then
+    vim.schedule(function()
+        vim.notify(
+            "vim.pack could not load plugins:\n" .. tostring(pack_error),
+            vim.log.levels.ERROR
+        )
+    end)
+end

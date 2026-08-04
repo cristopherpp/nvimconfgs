@@ -45,3 +45,5 @@ opt.completeopt = { "menu", "menuone", "noselect" }
 -- Cleaner netrw
 vim.g.netrw_banner = 0
 vim.g.netrw_liststyle = 3
+
+vim.opt.hidden = true

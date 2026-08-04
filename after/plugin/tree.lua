@@ -1,4 +1,9 @@
-local tree = require("nvim-tree")
+local available, tree = pcall(require, "nvim-tree")
+
+if not available then
+    return
+end
+
 local api = require("nvim-tree.api")
 
 tree.setup({

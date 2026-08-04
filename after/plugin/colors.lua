@@ -1,6 +1,12 @@
-require("tokyonight").setup({
+local available, tokyonight = pcall(require, "tokyonight")
+
+if not available then
+    vim.cmd.colorscheme("habamax")
+    return
+end
+
+tokyonight.setup({
     style = "night",
-    transparent = false,
 })
 
 vim.cmd.colorscheme("tokyonight")

@@ -1,4 +1,8 @@
-local lint = require("lint")
+local available, lint = pcall(require, "lint")
+
+if not available then
+    return
+end
 
 lint.linters_by_ft = {
     javascript = { "eslint_d" },
