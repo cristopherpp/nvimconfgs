@@ -45,6 +45,8 @@ map("n", "<leader>ff", function()
     builtin.find_files({
         cwd = project_root(),
         hidden = true,
+        no_ignore = true,
+        no_ignore_parent = true,
     })
 end, {
     desc = "Find project files",
