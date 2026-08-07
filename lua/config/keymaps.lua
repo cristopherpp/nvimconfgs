@@ -97,19 +97,6 @@ map("n", "<C-l>", "<C-w>l", {
     desc = "Move to right window",
 })
 
--- Buffer navigation
-map("n", "<leader>bn", "<cmd>bnext<CR>", {
-    desc = "Next buffer",
-})
-
-map("n", "<leader>bp", "<cmd>bprevious<CR>", {
-    desc = "Previous buffer",
-})
-
-map("n", "<leader>bd", "<cmd>bdelete<CR>", {
-    desc = "Delete buffer",
-})
-
 -- Clear search highlighting
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", {
     desc = "Clear search highlighting",

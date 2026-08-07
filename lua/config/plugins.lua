@@ -93,6 +93,10 @@ local plugins = {
         src = github("mbbill/undotree"),
         name = "undotree",
     },
+    {
+        src = github("akinsho/bufferline.nvim"),
+        name = "bufferline.nvim",
+    },
 }
 
 local pack_ok, pack_error = pcall(vim.pack.add, plugins, {
