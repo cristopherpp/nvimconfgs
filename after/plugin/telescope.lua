@@ -2,8 +2,13 @@ local telescope_available, telescope = pcall(require, "telescope")
 local builtin_available, builtin = pcall(require, "telescope.builtin")
 
 if not telescope_available or not builtin_available then
+	vim.notify("Telescope could not be loaded", vim.log.levels.ERROR)
+
 	return
 end
+
+local project = require("config.project")
+local map = vim.keymap.set
 
 telescope.setup({
 	defaults = {
@@ -14,24 +19,13 @@ telescope.setup({
 
 	pickers = {
 		find_files = {
+			-- Show dotfiles while respecting .gitignore.
 			hidden = true,
 		},
 	},
 })
 
-local map = vim.keymap.set
-
-local function project_root()
-	return vim.fs.root(0, {
-		".git",
-		"package.json",
-		"pyproject.toml",
-		"CMakeLists.txt",
-		"Makefile",
-	}) or vim.uv.cwd()
-end
-
--- Search current file
+-- Search inside the current file.
 map("n", "<C-f>", function()
 	builtin.current_buffer_fuzzy_find({
 		previewer = false,
@@ -40,47 +34,85 @@ end, {
 	desc = "Search current file",
 })
 
--- Project files
+-- Find project files while respecting .gitignore.
 map("n", "<leader>ff", function()
 	builtin.find_files({
-		cwd = project_root(),
-		hidden = true,
-		no_ignore = true,
-		no_ignore_parent = true,
+		cwd = project.root(),
 	})
 end, {
 	desc = "Find project files",
 })
 
--- Whole-project text search
+-- Find hidden and ignored files, excluding generated directories.
+map("n", "<leader>fa", function()
+	builtin.find_files({
+		cwd = project.root(),
+		hidden = true,
+		no_ignore = true,
+		no_ignore_parent = true,
+
+		file_ignore_patterns = {
+			"%.git/",
+			"node_modules/",
+			"%.nuxt/",
+			"dist/",
+			"coverage/",
+			"target/",
+			"vendor/",
+		},
+	})
+end, {
+	desc = "Find all files including ignored",
+})
+
+-- Find recently opened project files.
+map("n", "<leader>fo", function()
+	builtin.oldfiles({
+		cwd_only = true,
+	})
+end, {
+	desc = "Find recent project files",
+})
+
+-- Search text throughout the project.
 map("n", "<leader>sg", function()
 	builtin.live_grep({
-		cwd = project_root(),
+		cwd = project.root(),
+
+		additional_args = function()
+			return {
+				"--hidden",
+				"--glob",
+				"!**/.git/*",
+				"--glob",
+				"!**/node_modules/*",
+				"--glob",
+				"!**/.nuxt/*",
+				"--glob",
+				"!**/dist/*",
+				"--glob",
+				"!**/coverage/*",
+				"--glob",
+				"!**/target/*",
+				"--glob",
+				"!**/vendor/*",
+			}
+		end,
 	})
 end, {
 	desc = "Search project text",
 })
 
-map("n", "<leader>fg", function()
-	builtin.live_grep({
-		cwd = project_root(),
-	})
-end, {
-	desc = "Search project text",
-})
-
+-- Search for the word under the cursor.
 map("n", "<leader>sw", function()
 	builtin.grep_string({
-		cwd = project_root(),
+		cwd = project.root(),
 	})
 end, {
 	desc = "Search word under cursor",
 })
 
-map("n", "<leader>sb", builtin.buffers, {
-	desc = "Search buffers",
-})
-
+-- General search utilities.
 map("n", "<leader>sr", builtin.resume, {
 	desc = "Resume latest search",
 })
@@ -101,7 +133,19 @@ map("n", "<leader>sl", builtin.loclist, {
 	desc = "Search location list",
 })
 
--- Neovim configuration
+map("n", "<leader>sj", builtin.jumplist, {
+	desc = "Search jump history",
+})
+
+map("n", "<leader>sc", function()
+	builtin.colorscheme({
+		enable_preview = true,
+	})
+end, {
+	desc = "Search colorschemes",
+})
+
+-- Neovim configuration.
 local config_directory = vim.fn.stdpath("config")
 
 map("n", "<leader>nf", function()
@@ -133,12 +177,4 @@ end, {
 
 map("n", "<leader>nr", "<cmd>restart<CR>", {
 	desc = "Restart Neovim",
-})
-
-vim.keymap.set("n", "<leader>sc", function()
-	builtin.colorscheme({
-		enable_preview = true,
-	})
-end, {
-	desc = "Search colorschemes",
 })

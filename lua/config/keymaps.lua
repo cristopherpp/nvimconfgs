@@ -1,122 +1,86 @@
 local map = vim.keymap.set
 
-local opts = {
-	noremap = true,
-	silent = true,
-}
+local function options(description)
+	return {
+		noremap = true,
+		silent = true,
+		desc = description,
+	}
+end
 
--- File explorer: Space + e
-map("n", "<leader>e", vim.cmd.Ex, {
-	desc = "Open file explorer",
-})
+local function open_command_palette()
+	require("config.command_palette").open()
+end
 
--- Primeagen's original explorer mapping: Space + p + v
-map("n", "<leader>pv", vim.cmd.Ex, {
-	desc = "Open file explorer",
-})
+map("n", "<C-S-p>", open_command_palette, options("Open command palette"))
 
--- Save: Ctrl + s
-map({ "n", "i", "v" }, "<C-s>", "<cmd>w<CR>", {
-	desc = "Save file",
-})
+map("n", "<leader>cp", open_command_palette, options("Open command palette"))
 
--- Quit: Space + q
-map("n", "<leader>q", "<cmd>q<CR>", {
-	desc = "Quit",
-})
+-- File explorer
+map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", options("Toggle file explorer"))
 
--- Force quit: Space + Q
-map("n", "<leader>Q", "<cmd>q!<CR>", {
-	desc = "Force quit",
-})
+-- Save
+map({ "n", "i", "x" }, "<C-s>", "<cmd>write<CR>", options("Save file"))
 
--- Select everything: Ctrl + a
-map("n", "<C-a>", "ggVG", {
-	desc = "Select all",
-})
+-- Quit
+map("n", "<leader>q", "<cmd>quit<CR>", options("Quit window"))
 
--- Copy to system clipboard
-map("v", "<C-c>", '"+y', {
-	desc = "Copy selection",
-})
+map("n", "<leader>Q", "<cmd>quit!<CR>", options("Force quit window"))
 
-map({ "n", "v" }, "<leader>y", '"+y', {
-	desc = "Copy to system clipboard",
-})
+-- Select everything
+map("n", "<C-a>", "ggVG", options("Select entire file"))
 
-map("n", "<leader>Y", '"+Y', {
-	desc = "Copy line to system clipboard",
-})
+-- System clipboard
+map("x", "<C-c>", '"+y', options("Copy selection to clipboard"))
 
--- Paste from system clipboard
-map({ "n", "v" }, "<C-v>", '"+p', {
-	desc = "Paste from system clipboard",
-})
+map({ "n", "x" }, "<leader>y", '"+y', options("Copy to system clipboard"))
 
-map({ "n", "v" }, "<leader>p", '"+p', {
-	desc = "Paste from system clipboard",
-})
+map("n", "<leader>Y", '"+Y', options("Copy line to system clipboard"))
 
--- Keep copied text after pasting over a selection
-map("x", "p", [["_dP]], {
-	desc = "Paste without replacing register",
-})
+map({ "n", "x" }, "<leader>p", '"+p', options("Paste from system clipboard"))
 
--- Delete without replacing copied text
-map({ "n", "v" }, "<leader>d", [["_d]], {
-	desc = "Delete without copying",
-})
+-- Keep the copied text after replacing a selection.
+map("x", "p", [["_dP]], options("Paste without replacing register"))
+
+-- Delete without replacing copied text.
+map({ "n", "x" }, "<leader>d", [["_d]], options("Delete without copying"))
 
 -- Move selected lines
-map("v", "J", ":m '>+1<CR>gv=gv", opts)
-map("v", "K", ":m '<-2<CR>gv=gv", opts)
+map("x", "J", ":move '>+1<CR>gv=gv", options("Move selection down"))
 
--- Keep cursor centered
-map("n", "<C-d>", "<C-d>zz", opts)
-map("n", "<C-u>", "<C-u>zz", opts)
-map("n", "n", "nzzzv", opts)
-map("n", "N", "Nzzzv", opts)
+map("x", "K", ":move '<-2<CR>gv=gv", options("Move selection up"))
+
+-- Center the cursor after navigation
+map("n", "<C-d>", "<C-d>zz", options("Scroll down and center"))
+
+map("n", "<C-u>", "<C-u>zz", options("Scroll up and center"))
+
+map("n", "n", "nzzzv", options("Next search result and center"))
+
+map("n", "N", "Nzzzv", options("Previous search result and center"))
 
 -- Join lines without moving the cursor
-map("n", "J", "mzJ`z", opts)
+map("n", "J", "mzJ`z", options("Join lines without moving cursor"))
 
 -- Window navigation
-map("n", "<C-h>", "<C-w>h", {
-	desc = "Move to left window",
-})
+map("n", "<C-h>", "<C-w>h", options("Move to left window"))
 
-map("n", "<C-j>", "<C-w>j", {
-	desc = "Move to lower window",
-})
+map("n", "<C-j>", "<C-w>j", options("Move to lower window"))
 
-map("n", "<C-k>", "<C-w>k", {
-	desc = "Move to upper window",
-})
+map("n", "<C-k>", "<C-w>k", options("Move to upper window"))
 
-map("n", "<C-l>", "<C-w>l", {
-	desc = "Move to right window",
-})
+map("n", "<C-l>", "<C-w>l", options("Move to right window"))
 
 -- Clear search highlighting
-map("n", "<Esc>", "<cmd>nohlsearch<CR>", {
-	desc = "Clear search highlighting",
-})
+map("n", "<Esc>", "<cmd>nohlsearch<CR>", options("Clear search highlighting"))
 
--- Replace the word under the cursor
-map("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], {
-	desc = "Replace word under cursor",
-})
+-- Start a project-wide replacement for the word under the cursor.
+map("n", "<leader>rw", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], options("Replace word in current file"))
 
 -- Latin American keyboard helpers
--- ñ opens command mode, like :
-map("n", "ñ", ":", {
-	desc = "Enter command mode",
-})
+map({ "n", "x" }, "ñ", ":", options("Enter command mode"))
 
--- Ñ repeats the latest f/F/t/T movement, like ;
-map("n", "Ñ", ";", {
-	desc = "Repeat character movement",
-})
+map("n", "Ñ", ";", options("Repeat character movement"))
 
 -- Diagnostics
 map("n", "]d", function()
@@ -124,36 +88,20 @@ map("n", "]d", function()
 		count = 1,
 		float = true,
 	})
-end, {
-	desc = "Next diagnostic",
-})
+end, options("Next diagnostic"))
 
 map("n", "[d", function()
 	vim.diagnostic.jump({
 		count = -1,
 		float = true,
 	})
-end, {
-	desc = "Previous diagnostic",
-})
+end, options("Previous diagnostic"))
 
-map("n", "<leader>ld", vim.diagnostic.open_float, {
-	desc = "Show line diagnostic",
-})
+map("n", "<leader>ld", vim.diagnostic.open_float, options("Show line diagnostic"))
 
-map("n", "<leader>lq", vim.diagnostic.setloclist, {
-	desc = "Diagnostics to location list",
-})
+map("n", "<leader>lq", vim.diagnostic.setloclist, options("Send diagnostics to location list"))
 
 -- Quickfix navigation
-map("n", "]q", "<cmd>cnext<CR>zz", {
-	desc = "Next quickfix item",
-})
+map("n", "]q", "<cmd>cnext<CR>zz", options("Next quickfix item"))
 
-map("n", "[q", "<cmd>cprevious<CR>zz", {
-	desc = "Previous quickfix item",
-})
-
-map("n", "<leader>sq", "<cmd>copen<CR>", {
-	desc = "Open quickfix list",
-})
+map("n", "[q", "<cmd>cprevious<CR>zz", options("Previous quickfix item"))
