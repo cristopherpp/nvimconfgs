@@ -1,78 +1,83 @@
-local ok, cmp = pcall(require, "cmp")
+local available, blink = pcall(require, "blink.cmp")
 
-if not ok then
-    return
+if not available then
+	vim.notify("blink.cmp could not be loaded", vim.log.levels.ERROR)
+
+	return
 end
 
-cmp.setup({
-    preselect = cmp.PreselectMode.None,
+blink.setup({
+	-- Tab accepts completions and navigates snippet fields.
+	keymap = {
+		preset = "super-tab",
+	},
 
-    completion = {
-        completeopt = "menu,menuone,noinsert",
-    },
+	appearance = {
+		nerd_font_variant = "mono",
+	},
 
-    snippet = {
-        expand = function(arguments)
-            vim.snippet.expand(arguments.body)
-        end,
-    },
+	completion = {
+		list = {
+			selection = {
+				-- Preserve your previous behavior: nothing is
+				-- automatically selected or inserted.
+				preselect = false,
+				auto_insert = false,
+			},
+		},
 
-    mapping = cmp.mapping.preset.insert({
-        ["<C-n>"] = cmp.mapping.select_next_item(),
-        ["<C-p>"] = cmp.mapping.select_prev_item(),
+		menu = {
+			draw = {
+				columns = {
+					{
+						"kind_icon",
+						"label",
+						"label_description",
+						gap = 1,
+					},
+					{
+						"kind",
+						"source_name",
+						gap = 1,
+					},
+				},
+			},
+		},
 
-        ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-        ["<C-f>"] = cmp.mapping.scroll_docs(4),
+		documentation = {
+			auto_show = true,
+			auto_show_delay_ms = 300,
+		},
 
-        ["<C-Space>"] = cmp.mapping.complete(),
-        ["<C-e>"] = cmp.mapping.abort(),
+		ghost_text = {
+			enabled = false,
+		},
+	},
 
-        ["<CR>"] = cmp.mapping.confirm({
-            select = false,
-        }),
+	signature = {
+		enabled = true,
+	},
 
-        ["<Tab>"] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                cmp.select_next_item()
-            elseif vim.snippet.active({
-                direction = 1,
-            }) then
-                vim.snippet.jump(1)
-            else
-                fallback()
-            end
-        end, {
-            "i",
-            "s",
-        }),
+	-- Uses Neovim's native vim.snippet implementation.
+	snippets = {
+		preset = "default",
+	},
 
-        ["<S-Tab>"] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                cmp.select_prev_item()
-            elseif vim.snippet.active({
-                direction = -1,
-            }) then
-                vim.snippet.jump(-1)
-            else
-                fallback()
-            end
-        end, {
-            "i",
-            "s",
-        }),
-    }),
+	sources = {
+		default = {
+			"lsp",
+			"path",
+			"snippets",
+			"buffer",
+		},
+	},
 
-    sources = cmp.config.sources({
-        {
-            name = "nvim_lsp",
-        },
-        {
-            name = "path",
-        },
-    }, {
-        {
-            name = "buffer",
-            keyword_length = 3,
-        },
-    }),
+	fuzzy = {
+		implementation = "prefer_rust_with_warning",
+	},
+})
+
+-- Make completion and snippet capabilities available to every LSP.
+vim.lsp.config("*", {
+	capabilities = blink.get_lsp_capabilities(),
 })
