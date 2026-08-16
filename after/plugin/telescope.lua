@@ -138,11 +138,9 @@ map("n", "<leader>sj", builtin.jumplist, {
 })
 
 map("n", "<leader>sc", function()
-	builtin.colorscheme({
-		enable_preview = true,
-	})
+	require("config.theme").select()
 end, {
-	desc = "Search colorschemes",
+	desc = "Select and save colorscheme",
 })
 
 -- Neovim configuration.

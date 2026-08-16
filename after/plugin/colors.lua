@@ -1,12 +1,10 @@
-local available, tokyonight = pcall(require, "tokyonight")
+local tokyonight_available, tokyonight = pcall(require, "tokyonight")
 
-if not available then
-    vim.cmd.colorscheme("habamax")
-    return
+if tokyonight_available then
+	tokyonight.setup({
+		style = "night",
+		transparent = false,
+	})
 end
 
-tokyonight.setup({
-    style = "night",
-})
-
-vim.cmd.colorscheme("tokyonight")
+require("config.theme").load()
