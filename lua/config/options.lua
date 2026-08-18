@@ -1,4 +1,5 @@
 local opt = vim.opt
+local platform = require("config.platform")
 
 -- Line numbers
 opt.number = true
@@ -30,7 +31,7 @@ opt.splitright = true
 opt.splitbelow = true
 
 -- Persistent undo
-local undo_directory = vim.fn.stdpath("state") .. "/undo"
+local undo_directory = platform.joinpath(platform.state, "undo")
 vim.fn.mkdir(undo_directory, "p")
 
 opt.undodir = undo_directory

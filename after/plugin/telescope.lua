@@ -8,6 +8,7 @@ if not telescope_available or not builtin_available then
 end
 
 local project = require("config.project")
+local platform = require("config.platform")
 local map = vim.keymap.set
 
 telescope.setup({
@@ -144,7 +145,7 @@ end, {
 })
 
 -- Neovim configuration.
-local config_directory = vim.fn.stdpath("config")
+local config_directory = platform.config
 
 map("n", "<leader>nf", function()
 	builtin.find_files({
@@ -156,19 +157,19 @@ end, {
 })
 
 map("n", "<leader>ni", function()
-	vim.cmd.edit(vim.fn.fnameescape(config_directory .. "/init.lua"))
+	vim.cmd.edit(vim.fn.fnameescape(platform.joinpath(config_directory, "init.lua")))
 end, {
 	desc = "Edit init.lua",
 })
 
 map("n", "<leader>np", function()
-	vim.cmd.edit(vim.fn.fnameescape(config_directory .. "/lua/config/plugins.lua"))
+	vim.cmd.edit(vim.fn.fnameescape(platform.joinpath(config_directory, "lua", "config", "plugins.lua")))
 end, {
 	desc = "Edit plugins.lua",
 })
 
 map("n", "<leader>nk", function()
-	vim.cmd.edit(vim.fn.fnameescape(config_directory .. "/lua/config/keymaps.lua"))
+	vim.cmd.edit(vim.fn.fnameescape(platform.joinpath(config_directory, "lua", "config", "keymaps.lua")))
 end, {
 	desc = "Edit keymaps.lua",
 })

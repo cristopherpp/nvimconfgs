@@ -121,10 +121,6 @@ local plugins = {
 		src = github("rafamadriz/friendly-snippets"),
 		name = "friendly-snippets",
 	},
-	{
-		src = github("lewis6991/gitsigns.nvim"),
-		name = "gitsigns.nvim",
-	},
 }
 
 local pack_ok, pack_error = pcall(vim.pack.add, plugins, {

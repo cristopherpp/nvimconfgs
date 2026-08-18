@@ -23,7 +23,6 @@ local parsers = {
 	"yaml",
 	"markdown",
 	"markdown_inline",
-	"yaml",
 }
 
 treesitter.install(parsers)

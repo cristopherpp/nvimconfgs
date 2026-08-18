@@ -1,11 +1,16 @@
 local theme = {}
+local platform = require("config.platform")
 
 local default_theme = "tokyonight-night"
 
-local state_directory = vim.fn.stdpath("state")
-local state_file = vim.fs.joinpath(state_directory, "theme.txt")
+local state_directory = platform.state
+local state_file = platform.joinpath(state_directory, "theme.txt")
 
 local function read_saved_theme()
+	if not vim.uv.fs_stat(state_file) then
+		return nil
+	end
+
 	local lines = vim.fn.readfile(state_file)
 
 	if not lines or not lines[1] or lines[1] == "" then
